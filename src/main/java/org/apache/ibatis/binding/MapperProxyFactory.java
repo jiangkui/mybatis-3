@@ -47,9 +47,15 @@ public class MapperProxyFactory<T> {
     return (T) Proxy.newProxyInstance(mapperInterface.getClassLoader(), new Class[] { mapperInterface }, mapperProxy);
   }
 
+  /**
+  * 通过 JDK 创建 Proxy，内部持有 MapperProxy
+  *
+  * 运行期间：
+  *  - @Autowired 对象调用方法时，会执行 MapperProxy@invoke()，之后会根据 method 查找对应的 MapperMethod 执行，内部会拿到 MappedStatement 对象（内有SQL和 resultMap）
+  *  - MappedStatement 拿到 Configuration，new 一个 StatementHandler，之后走 DB 中间件进行执行（dbcp、jdbc等等）
+  */
   public T newInstance(SqlSession sqlSession) {
     final MapperProxy<T> mapperProxy = new MapperProxy<>(sqlSession, mapperInterface, methodCache);
     return newInstance(mapperProxy);
   }
-
 }

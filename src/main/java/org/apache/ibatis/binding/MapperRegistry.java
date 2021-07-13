@@ -40,6 +40,13 @@ public class MapperRegistry {
     this.config = config;
   }
 
+  /**
+   * 通过 MapperProxyFactory 创建：有 Proxy 的 MapperProxy
+   *
+   * 运行期间：
+   *    @Autowired 对象调用方法时，会执行 MapperProxy@invoke()，之后会根据 method 查找对应的 MapperMethod 执行，内部会拿到 MappedStatement 对象（内有SQL和 resultMap）
+   *    MappedStatement 拿到 Configuration，new 一个 StatementHandler，之后走 DB 中间件进行执行（dbcp、jdbc等等）
+   */
   @SuppressWarnings("unchecked")
   public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
     final MapperProxyFactory<T> mapperProxyFactory = (MapperProxyFactory<T>) knownMappers.get(type);
@@ -47,6 +54,7 @@ public class MapperRegistry {
       throw new BindingException("Type " + type + " is not known to the MapperRegistry.");
     }
     try {
+      // 创建 MapperProxy
       return mapperProxyFactory.newInstance(sqlSession);
     } catch (Exception e) {
       throw new BindingException("Error getting mapper instance. Cause: " + e, e);
@@ -57,6 +65,10 @@ public class MapperRegistry {
     return knownMappers.containsKey(type);
   }
 
+  /**
+  * 用 MapperAnnotationBuilder 对这个 mapperInterface 进行解析，生成 MapperStatement
+  * @param type 业务方写的 XxxMapper.java
+  */
   public <T> void addMapper(Class<T> type) {
     if (type.isInterface()) {
       if (hasMapper(type)) {
@@ -68,6 +80,7 @@ public class MapperRegistry {
         // It's important that the type is added before the parser is run
         // otherwise the binding may automatically be attempted by the
         // mapper parser. If the type is already known, it won't try.
+        // 解析 XxxMapper
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
         parser.parse();
         loadCompleted = true;

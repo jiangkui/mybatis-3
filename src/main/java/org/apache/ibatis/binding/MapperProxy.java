@@ -28,6 +28,13 @@ import org.apache.ibatis.reflection.ExceptionUtil;
 import org.apache.ibatis.session.SqlSession;
 
 /**
+ * 各种 @Autowired XxxMapper，最终是由 MapperProxyFactory#newInstance() 创建了一个JDK Proxy，内部持有 MapperProxy
+ * 最初触发点在 Spring-Mybatis 项目的：org.mybatis.spring.SqlSessionTemplate#getMapper 方法上。
+ *
+ * 运行期间：
+ *  - @Autowired 对象调用方法时，会执行 MapperProxy@invoke()，之后会根据 method 查找对应的 MapperMethod 执行，内部会拿到 MappedStatement 对象（内有SQL和 resultMap）
+ *  - MappedStatement 拿到 Configuration，new 一个 StatementHandler，之后走 DB 中间件进行执行（dbcp、jdbc等等）
+ *
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
@@ -74,6 +81,9 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     lookupConstructor = lookup;
   }
 
+  /**
+  * 各种 @Autowired XxxMapper 在调用 method 方法时，最终通过 JDK Proxy 指向了这里。
+  */
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
@@ -89,12 +99,15 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     } catch (Throwable t) {
       throw ExceptionUtil.unwrapThrowable(t);
     }
+
+    // 查找对应的 MapperMethod 并执行
     final MapperMethod mapperMethod = cachedMapperMethod(method);
     return mapperMethod.execute(sqlSession, args);
   }
 
   private MapperMethod cachedMapperMethod(Method method) {
     return methodCache.computeIfAbsent(method,
+        // 找不到就创建一个。
         k -> new MapperMethod(mapperInterface, method, sqlSession.getConfiguration()));
   }
 

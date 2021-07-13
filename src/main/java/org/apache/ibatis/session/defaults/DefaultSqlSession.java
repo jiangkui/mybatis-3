@@ -193,7 +193,10 @@ public class DefaultSqlSession implements SqlSession {
   public int update(String statement, Object parameter) {
     try {
       dirty = true;
+      // 通过 method 查找对应的 MappedStatement 对象
       MappedStatement ms = configuration.getMappedStatement(statement);
+
+      // 参见 SimpleExecutor#update()
       return executor.update(ms, wrapCollection(parameter));
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error updating database.  Cause: " + e, e);

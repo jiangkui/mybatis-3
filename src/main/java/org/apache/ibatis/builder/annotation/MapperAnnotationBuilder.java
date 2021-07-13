@@ -123,9 +123,13 @@ public class MapperAnnotationBuilder {
     this.type = type;
   }
 
+  /**
+  * 解析 XxxMapper
+  */
   public void parse() {
     String resource = type.toString();
     if (!configuration.isResourceLoaded(resource)) {
+      // 查找 XxxMapper 对应的 XxxMapper.xml，如果有，则解析，生成 MapperStatement 对象，注册到 Configuration 的 MapperStatement Map 内
       loadXmlResource();
       configuration.addLoadedResource(resource);
       assistant.setCurrentNamespace(type.getName());
@@ -136,6 +140,7 @@ public class MapperAnnotationBuilder {
         try {
           // issue #237
           if (!method.isBridge()) {
+            // 解析 method 上对应的各种注解，也会生成 MapperStatement 对象，注册到 Configuration 的 MapperStatement Map 内
             parseStatement(method);
           }
         } catch (IncompleteElementException e) {
@@ -161,6 +166,9 @@ public class MapperAnnotationBuilder {
     }
   }
 
+  /**
+  * 查找 XxxMapper 对应的 XxxMapper.xml，如果有，则解析，生成 MapperStatement 对象，注册到 Configuration 的 MapperStatement Map 内
+  */
   private void loadXmlResource() {
     // Spring may not know the real resource name so we check a flag
     // to prevent loading again a resource twice
@@ -178,6 +186,7 @@ public class MapperAnnotationBuilder {
         }
       }
       if (inputStream != null) {
+        // 解析 XxxMapper.xml
         XMLMapperBuilder xmlParser = new XMLMapperBuilder(inputStream, assistant.getConfiguration(), xmlResource, configuration.getSqlFragments(), type.getName());
         xmlParser.parse();
       }
@@ -296,6 +305,13 @@ public class MapperAnnotationBuilder {
     return null;
   }
 
+  /**
+  * 处理 XxxMapper 方法上的各种注解
+  * 获取这些注解
+  *   - 优先获取：@Select, @Insert, @Update, @Delete
+  *   - 其次获取：@SelectProvider, @InsertProvider, @UpdateProvider, @DeleteProvider
+  * 还有很多其他注解：@SelectKey、@ResultMap、@ResultType
+  */
   void parseStatement(Method method) {
     Class<?> parameterTypeClass = getParameterType(method);
     LanguageDriver languageDriver = getLanguageDriver(method);
@@ -307,6 +323,10 @@ public class MapperAnnotationBuilder {
       Integer timeout = null;
       StatementType statementType = StatementType.PREPARED;
       ResultSetType resultSetType = configuration.getDefaultResultSetType();
+
+      // 获取这些注解
+      // - 优先获取：@Select, @Insert, @Update, @Delete
+      // - 其次获取：@SelectProvider, @InsertProvider, @UpdateProvider, @DeleteProvider
       SqlCommandType sqlCommandType = getSqlCommandType(method);
       boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
       boolean flushCache = !isSelect;
@@ -495,7 +515,13 @@ public class MapperAnnotationBuilder {
     return languageDriver.createSqlSource(configuration, sql.toString().trim(), parameterTypeClass);
   }
 
+  /**
+   * 获取这些注解
+   *  - 优先获取：@Select, @Insert, @Update, @Delete
+   *  - 其次获取：@SelectProvider, @InsertProvider, @UpdateProvider, @DeleteProvider
+   */
   private SqlCommandType getSqlCommandType(Method method) {
+    // 获取这些注解 @Select, @Insert, @Update, @Delete
     Class<? extends Annotation> type = getSqlAnnotationType(method);
 
     if (type == null) {

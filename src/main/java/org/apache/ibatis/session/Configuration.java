@@ -771,10 +771,21 @@ public class Configuration {
     mapperRegistry.addMappers(packageName);
   }
 
+  /**
+  * 由 Mybatis-spring 项目跳转过来
+  */
   public <T> void addMapper(Class<T> type) {
+    // 看这里
     mapperRegistry.addMapper(type);
   }
 
+  /**
+   * 通过 MapperProxyFactory 创建 MapperProxy 对象
+   *
+   * 运行期间：
+   *    - @Autowired 对象调用方法时，会执行 MapperProxy@invoke()，之后会根据 method 查找对应的 MapperMethod 执行，内部会拿到 MappedStatement 对象（内有SQL和 resultMap）
+   *    - MappedStatement 拿到 Configuration，new 一个 StatementHandler，之后走 DB 中间件进行执行（dbcp、jdbc等等）
+   */
   public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
     return mapperRegistry.getMapper(type, sqlSession);
   }

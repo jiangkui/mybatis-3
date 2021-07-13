@@ -54,6 +54,9 @@ public class MapperMethod {
     this.method = new MethodSignature(config, mapperInterface, method);
   }
 
+  /**
+  * 执行SQL：Insert、Update、Delete、Select 等等
+  */
   public Object execute(SqlSession sqlSession, Object[] args) {
     Object result;
     switch (command.getType()) {
@@ -64,6 +67,7 @@ public class MapperMethod {
       }
       case UPDATE: {
         Object param = method.convertArgsToSqlCommandParam(args);
+        // 我们看一个 Update 是如何执行的 DefaultSqlSession#update()
         result = rowCountResult(sqlSession.update(command.getName(), param));
         break;
       }
